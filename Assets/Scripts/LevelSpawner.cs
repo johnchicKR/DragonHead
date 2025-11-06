@@ -82,14 +82,11 @@ public class LevelSpawner : MonoBehaviour
         }
 
         // 머리/꼬리 프리팹 배치 (Actors 아래에)
-        if (headPrefab != null)
-        {
-            Instantiate(headPrefab, GridUtil.CellToWorld(grid, board.Start), Quaternion.identity, actorsParent);
-        }
-        if (tailPrefab != null)
-        {
-            Instantiate(tailPrefab, GridUtil.CellToWorld(grid, board.End), Quaternion.identity, actorsParent);
-        }
+        if (headPrefab)
+            PlaceActor(headPrefab, board.Start, actorsParent, grid, grid.cellSize.x, 0.10f);
+        if (tailPrefab)
+            PlaceActor(tailPrefab, board.End, actorsParent, grid, grid.cellSize.x, 0.10f);
+
 
         if (pathSystem != null)
         {
@@ -107,6 +104,7 @@ public class LevelSpawner : MonoBehaviour
             cursor.board = board;
             cursor.grid = grid;
         }
+
     }
 
     void PaintGridLines(int N)
@@ -148,4 +146,25 @@ public class LevelSpawner : MonoBehaviour
             tilemapGridLines.transform.position = p;
         }
     }
+
+    // LevelSpawner.cs 내부 (클래스 안 아무 곳)
+    void FitSpriteToCell(SpriteRenderer sr, float cellSize = 1f, float padding = 0.10f)
+    {
+        if (!sr || sr.sprite == null) return;
+        Vector2 spriteSize = sr.sprite.bounds.size;      // Scale=1 기준 월드 크기
+        float maxAxis = Mathf.Max(spriteSize.x, spriteSize.y);
+        float target = Mathf.Max(0f, cellSize - padding * 2f);
+        float scale = (maxAxis <= 0f) ? 1f : (target / maxAxis);
+        sr.transform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    GameObject PlaceActor(GameObject prefab, Vector2Int cell, Transform parent, Grid gridRef, float cellSize = 1f, float padding = 0.10f)
+    {
+        var pos = GridUtil.CellPos(gridRef, cell);
+        var go = Instantiate(prefab, pos, Quaternion.identity, parent);
+        var sr = go.GetComponent<SpriteRenderer>();
+        if (sr) FitSpriteToCell(sr, cellSize, padding);  // 칸 안에 예쁘게
+        return go;
+    }
+
 }

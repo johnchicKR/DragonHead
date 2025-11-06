@@ -25,33 +25,35 @@ public class CameraAutoFitPortrait : MonoBehaviour
         float board = N * cellSize;
         Vector3 center = new(board * 0.5f, -board * 0.5f, -10f);
 
-        float aspect = (float)Screen.width / Screen.height;
+        // 화면 비율(시뮬레이터/분할뷰 대응: camera pixel 기준 권장)
+        float aspect = (float)cam.pixelWidth / cam.pixelHeight;
         float refAsp = Mathf.Max(0.01f, referenceAspect);
 
         // 기본 세로 기준 + 9:16 보호 + 추가 줌아웃
         float halfH = (board * 0.5f) + paddingCells * cellSize;
         float scale = Mathf.Max(1f, refAsp / aspect);
         float ortho = halfH * scale * zoomOutFactor;
-
         cam.orthographicSize = ortho;
 
-        // ★ 픽셀 정확도용: 카메라 실제 픽셀 높이 사용
+        // 실제 카메라 픽셀 높이 기반 1px 월드 두께
         float worldPerPixel = (cam.orthographicSize * 2f) / cam.pixelHeight;
 
         // 노치 보정(픽셀→월드)
         float safeOffsetY = -0.5f * extraTopSafeAreaPx * worldPerPixel;
 
         // 바이어스
-        float viewH = cam.orthographicSize;
-        Vector3 biasOffset = new(0f, viewH * biasY * 0.3f, 0f);
+        Vector3 biasOffset = new(0f, cam.orthographicSize * biasY * 0.3f, 0f);
 
-        // 우선 원하는 위치로 배치
-        Vector3 pos = cam.transform.position;
+        // ★ 중앙 배치 + 오프셋 적용
+        Vector3 pos = center + new Vector3(0f, safeOffsetY, 0f) + biasOffset;
 
-        // ★ 카메라를 1px 월드 단위로 스냅(반올림) → 그리드 선 깨짐 방지
+        // ★ 마지막에 1px 스냅(그리드 선 깨짐 방지)
         pos.x = Mathf.Round(pos.x / worldPerPixel) * worldPerPixel;
         pos.y = Mathf.Round(pos.y / worldPerPixel) * worldPerPixel;
 
         cam.transform.position = pos;
+
+        // (선택) 디버그
+        // Debug.Log($"[AutoFit] aspect={aspect:F3}, size={cam.orthographicSize:F3}, pos={pos}");
     }
 }

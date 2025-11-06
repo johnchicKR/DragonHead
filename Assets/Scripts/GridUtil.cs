@@ -1,20 +1,50 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public static class GridUtil
 {
-    // °ÔÀÓ ÁÂÇ¥°è(cell: x ¿À¸¥ÂÊ +, y ¾Æ·¡ÂÊ +) ¡æ À¯´ÏÆ¼ Å¸ÀÏ¸Ê ÁÂÇ¥°è(Vector3Int)
-    public static Vector3 CellToWorld(Grid grid, Vector2Int cell)
+    // ====== í”„ë¡œì íŠ¸ ì „ì—­ ì•µì»¤ ê¸°ì¤€ ======
+    // (0,0)=ì…€ ì¢Œìƒë‹¨, (0.5,0.5)=ì •ì¤‘ì•™, (1,1)=ì…€ ìš°í•˜ë‹¨
+    public static Vector2 ANCHOR = new Vector2(0.5f, 0.5f); // â˜… ì§€ê¸ˆ ë„¤ê°€ ëˆˆìœ¼ë¡œ ë§ì¶˜ ê¸°ì¤€
+
+    // ìš°ë¦¬ ê²Œì„: x ì˜¤ë¥¸ìª½+, y ì•„ë˜ìª½+  â†â†’  ìœ ë‹ˆí‹° íƒ€ì¼ë§µ: x ì˜¤ë¥¸ìª½+, y ìœ„ìª½+
+    public static Vector3Int ToUnityCell(Vector2Int gameCell)
+        => new Vector3Int(gameCell.x, -gameCell.y, 0);
+
+    public static Vector2Int ToGameCell(Vector3Int unityCell)
+        => new Vector2Int(unityCell.x, -unityCell.y);
+
+    public static Vector2Int WorldToCell(Grid grid, Vector3 world)
+        => ToGameCell(grid.WorldToCell(world));
+
+    // âœ… ì…€ ì•ˆ ì„ì˜ ì•µì»¤(0~1)ì˜ "ì›”ë“œ ì¢Œí‘œ"ë¥¼ ì¼ê´€ë˜ê²Œ ê³„ì‚°
+    public static Vector3 CellAnchor(Grid grid, Vector2Int gameCell, Vector2 anchor01)
     {
-        // Å¸ÀÏ¸ÊÀº y À§ÂÊÀÌ + ÀÌ¹Ç·Î y¿¡ ¸¶ÀÌ³Ê½º¸¦ ÇÑ µÚ, ÇØ´ç ¼¿ÀÇ "Á¤Áß¾Ó" ¿ùµå ÁÂÇ¥¸¦ ¹Ş´Â´Ù.
-        return grid.GetCellCenterWorld(new Vector3Int(cell.x, -cell.y, 0));
+        // 1) ê²Œì„ì…€ â†’ ìœ ë‹ˆí‹°ì…€( y ë¶€í˜¸ ë°˜ì „ í¬í•¨ )
+        var uc = ToUnityCell(gameCell);
+
+        // 2) ê·¸ ì…€ì˜ 'ì •ì¤‘ì•™' ì›”ë“œ ì¢Œí‘œ
+        var center = grid.GetCellCenterWorld(uc);
+
+        // 3) ì¤‘ì•™ ê¸°ì¤€ ì˜¤í”„ì…‹
+        //    x: (anchor-0.5)*cellSize.x  (0=ì™¼ìª½, 1=ì˜¤ë¥¸ìª½)
+        //    y: (0.5-anchor)*cellSize.y  (ê²Œì„ì€ ì•„ë˜ê°€ +ì´ë¯€ë¡œ ë¶€í˜¸ ë°˜ì „)
+        var off = new Vector3(
+            (anchor01.x - 0.5f) * grid.cellSize.x,
+            (0.5f - anchor01.y) * grid.cellSize.y,
+            0f
+        );
+
+        return center + off;
     }
 
-    // À¯´ÏÆ¼ ¿ùµå ÁÂÇ¥ ¡æ °ÔÀÓ ÁÂÇ¥°èÀÇ ¼¿ (x ¿À¸¥ÂÊ +, y ¾Æ·¡ÂÊ +)
-    public static Vector2Int WorldToCell(Grid grid, Vector3 world)
-    {
-        var c = grid.WorldToCell(world); // Å¸ÀÏ¸Ê ±âÁØ(À§ÂÊ +) ¼¿ ÁÂÇ¥
-        return new Vector2Int(c.x, -c.y); // °ÔÀÓ ±âÁØ(¾Æ·¡ÂÊ +)À¸·Î ¹İÀü
-    }
+    /// <summary>
+    /// í˜„ì¬ í”„ë¡œì íŠ¸ ì „ì—­ ì•µì»¤(=ANCHOR)ë¥¼ ì ìš©í•œ ì¢Œí‘œ
+    /// </summary>
+    public static Vector3 CellPos(Grid grid, Vector2Int gameCell)
+        => CellAnchor(grid, gameCell, ANCHOR);
 
     public static int Idx(int x, int y, int N) => y * N + x;
+
+    public static bool InBounds(Vector2Int c, int N)
+        => c.x >= 0 && c.y >= 0 && c.x < N && c.y < N;
 }
